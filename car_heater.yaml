@@ -169,5 +169,4 @@ sensor:
         friendly_name: '3h before start time'
         icon_template: mdi:clock
         value_template: >
-          {{ strptime(((as_timestamp('1970-01-01 ' ~ states.sensor.car_heater_departure_time.state) - (10800))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
-          
+          {{ strptime(((as_timestamp('1970-01-01 ' ~ states('sensor.car_heater_departure_time')) - (10800))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
