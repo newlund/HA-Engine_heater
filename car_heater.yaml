@@ -120,7 +120,7 @@ input_number:
 # Boolean sensors
 input_boolean:
   car_heater_weekday:
-    name: Only week days
+    name: Only weekdays
     icon: mdi:calendar
   car_heater_enable:
     name: Enable car heater
