@@ -1,0 +1,173 @@
+automation:
+  - alias: 'Start engine heater at calculated start time'
+    trigger:
+      platform: time_pattern
+      minutes: "/1"
+      seconds: 00
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: '{{ now().time().strftime("%H:%M") == states.sensor.car_heater_start_time.state }}'
+        - condition: template
+          value_template: '{{ states.sensor.car_heater_run_time.state|float > 0 }}'
+        - condition: state
+          entity_id: input_boolean.car_heater_enable
+          state: 'on'
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: input_boolean.car_heater_weekday
+              state: 'off'
+            - condition: time
+              weekday:
+                - mon
+                - tue
+                - wed
+                - thu
+                - fri
+    action:
+      - service: switch.turn_on
+        entity_id: switch.motorvarmare_relay
+
+
+  - alias: 'Stop engine heater at departure time'
+    trigger:
+      platform: time_pattern
+      minutes: "/1"
+      seconds: 00
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: '{{ now().time().strftime("%H:%M") == states.sensor.car_heater_departure_time.state }}'
+        - condition: template
+          value_template: '{{ states.sensor.car_heater_run_time.state|float > 0 }}'
+        - condition: state
+          entity_id: input_boolean.car_heater_enable
+          state: 'on'
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: input_boolean.car_heater_weekday
+              state: 'off'
+            - condition: time
+              weekday:
+                - mon
+                - tue
+                - wed
+                - thu
+                - fri
+    action:
+      - service: switch.turn_off
+        entity_id: switch.motorvarmare_relay
+
+  - alias: 'Sample temperature 3h before departure time'
+    trigger:
+      platform: time_pattern
+      minutes: "/1"
+      seconds: 00
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: '{{ now().time().strftime("%H:%M") == states.sensor.car_heater_3h_before_start_time.state }}'
+        - condition: state
+          entity_id: input_boolean.car_heater_enable
+          state: 'on'
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: input_boolean.car_heater_weekday
+              state: 'off'
+            - condition: time
+              weekday:
+                - mon
+                - tue
+                - wed
+                - thu
+                - fri
+    action:
+      service: input_number.set_value
+      data_template:
+        entity_id: input_number.car_heater_3h_before_temp
+        value: '{{ states.sensor.ute.state }}'
+
+# Input sensors
+input_number:
+  car_heater_hour:
+    name: Hour
+    icon: mdi:timer
+    min: 0
+    max: 23
+    step: 1
+
+  car_heater_minutes:
+    name: Minute
+    icon: mdi:timer
+    min: 0
+    max: 55
+    step: 5
+
+  car_heater_3h_before_temp:
+    name: Sample temp
+    unit_of_measurement: °C
+    icon: mdi:thermometer
+    min: -30
+    max: 30
+    step: 0.5
+
+# Boolean sensors
+input_boolean:
+  car_heater_weekday:
+    name: Only week days
+    icon: mdi:calendar
+  car_heater_enable:
+    name: Enable car heater
+    
+# Template sensors
+sensor:
+  - platform: template
+    sensors:
+      car_heater_departure_time:
+        friendly_name: 'Departure time'
+        icon_template: mdi:clock
+        value_template: >-
+          {% if states('input_number.car_heater_hour')|int|string|length == 1 %}0{% endif -%}
+          {{- states('input_number.car_heater_hour')|int|string -}}:
+          {%- if states('input_number.car_heater_minutes')|int|string|length == 1 %}0{% endif -%}
+          {{- states('input_number.car_heater_minutes')|int|string -}}
+          
+  - platform: template
+    sensors:
+      car_heater_run_time:
+        friendly_name: 'Calculated run time'
+        unit_of_measurement: h
+        value_template: >
+          {% if ((states('input_number.car_heater_3h_before_temp')|float) < 10) %}
+            {% if not states('input_number.car_heater_3h_before_temp') == 'unknown' %}
+              {{(states('input_number.car_heater_3h_before_temp')|float * (-0.05) + 1)|round(1)}}
+            {%endif%}
+          {%else%}
+            0
+          {%endif%}
+          
+  - platform: template
+    sensors:
+      car_heater_start_time:
+        friendly_name: 'Calculated start time'
+        icon_template: mdi:clock
+        value_template: >
+          {% if ((states('sensor.car_heater_run_time')|float) > 0) %}
+            {{ strptime(((as_timestamp('1970-01-01 ' ~ states('sensor.car_heater_departure_time')) - (states('sensor.car_heater_run_time')|float *3600))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
+          {%else%}
+            Never
+          {%endif%}
+  - platform: template
+    sensors:
+      car_heater_3h_before_start_time:
+        friendly_name: '3h before start time'
+        icon_template: mdi:clock
+        value_template: >
+          {{ strptime(((as_timestamp('1970-01-01 ' ~ states.sensor.car_heater_departure_time.state) - (10800))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
+          
