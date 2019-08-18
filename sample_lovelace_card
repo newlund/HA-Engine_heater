@@ -1,0 +1,14 @@
+entities:
+  - entity: input_boolean.car_heater_enable
+  - entity: sensor.car_heater_departure_time
+  - entity: input_number.car_heater_hour
+  - entity: input_number.car_heater_minutes
+  - entity: input_boolean.car_heater_weekday
+  - entity: input_number.car_heater_3h_before_temp
+  - entity: sensor.car_heater_run_time
+  - entity: sensor.car_heater_start_time
+  - entity: switch.motorvarmare_relay
+    name: Engine heater
+show_header_toggle: false
+title: Engine Heater
+type: entities
