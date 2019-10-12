@@ -158,15 +158,23 @@ sensor:
         friendly_name: 'Calculated start time'
         icon_template: mdi:clock
         value_template: >
-          {% if ((states('sensor.car_heater_run_time')|float) > 0) %}
-            {{ strptime(((as_timestamp('1970-01-01 ' ~ states('sensor.car_heater_departure_time')) - (states('sensor.car_heater_run_time')|float *3600))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
-          {%else%}
-            Never
-          {%endif%}
+          {% if states.sensor.car_heater_departure_time.state is defined %}
+            {% if ((states('sensor.car_heater_run_time')|float) > 0) %}
+              {{ strptime(((as_timestamp('1970-01-01 ' ~ states('sensor.car_heater_departure_time')) - (states('sensor.car_heater_run_time')|float *3600))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
+            {%else%}
+              Never
+            {%endif%}
+          {% else %}
+              waiting for sensors
+          {% endif%}
   - platform: template
     sensors:
       car_heater_3h_before_start_time:
         friendly_name: '3h before start time'
         icon_template: mdi:clock
         value_template: >
-          {{ strptime(((as_timestamp('1970-01-01 ' ~ states('sensor.car_heater_departure_time')) - (10800))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
+          {% if states.sensor.car_heater_departure_time.state is defined %}
+              {{ strptime(((as_timestamp('1970-01-01 ' ~ states('sensor.car_heater_departure_time')) - (10800))|timestamp_local), '%Y-%m-%d %H:%M:%S').strftime("%H:%M") }}
+          {% else %}
+              waiting for sensors
+          {% endif%}
